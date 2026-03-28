@@ -59,6 +59,7 @@ Each group has these fields:
 | `name` | string | Yes | Display name shown in the sidebar pin |
 | `cwd` | string | Yes | Working directory for the group (relative path) |
 | `color` | string | No | Group accent color (see Colors below) |
+| `category` | string | No | Category label for organizing pins in the sidebar (e.g. `"Platform"`, `"Satellites"`) |
 | `toolbar` | boolean | No | If `true`, this group's terminals appear as quick-action buttons in the top toolbar instead of the sidebar |
 | `sessions` | array | Yes | Terminal sessions to spawn (see Sessions below) |
 | `terminals` | array | Yes | Command buttons shown on the group (see Terminals below) |
@@ -203,6 +204,7 @@ If no icon is specified, `terminal` (CommandLineIcon) is used as the default.
     {
       "name": "Frontend",
       "cwd": "apps/web",
+      "category": "Apps",
       "color": "blue",
       "sessions": [
         { "cwd": "apps/web", "name": "Web", "claudeMode": true, "dangerousMode": false },
@@ -216,6 +218,7 @@ If no icon is specified, `terminal` (CommandLineIcon) is used as the default.
     {
       "name": "API",
       "cwd": "apps/api",
+      "category": "Apps",
       "color": "teal",
       "sessions": [
         { "cwd": "apps/api", "name": "API", "claudeMode": true, "dangerousMode": false }
