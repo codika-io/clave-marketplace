@@ -107,11 +107,12 @@ Terminals are command buttons that appear as colored icons on the group. Clickin
 | `commandMode` | `"prefill"` or `"auto"` | `"prefill"` = types the command but waits for Enter. `"auto"` = executes immediately |
 | `color` | string | Button color (see Colors below) |
 | `icon` | string | Button icon (see Icons below) |
+| `cwd` | string | Optional. Working directory for this terminal (relative path). If omitted, uses the group's `cwd` |
 
 **Tips:**
 - Use `"auto"` for dev servers (`npm run dev`) that should start immediately
 - Use `"prefill"` for dangerous or one-time commands (`firebase deploy`, `npm publish`) so the user can review before executing
-- Terminals run in the group's `cwd`
+- By default, terminals run in the group's `cwd`. Use per-terminal `cwd` when a group contains apps in different directories (e.g. a monorepo with `client/` and `dashboard/` sub-apps)
 
 ## Toolbar groups
 
@@ -227,6 +228,27 @@ If no icon is specified, `terminal` (CommandLineIcon) is used as the default.
   ]
 }
 ```
+
+## Per-terminal working directory
+
+When a single group contains apps in different subdirectories (e.g. a monorepo), use per-terminal `cwd` to run each terminal in the right location without splitting into separate groups:
+
+```json
+{
+  "name": "Creafid",
+  "cwd": "satellites/creafid",
+  "color": "#10b981",
+  "sessions": [
+    { "cwd": "satellites/creafid", "name": "Creafid", "claudeMode": true, "dangerousMode": true }
+  ],
+  "terminals": [
+    { "command": "npm run dev", "commandMode": "auto", "cwd": "satellites/creafid/creafid-app", "color": "#10b981", "icon": "device-phone-mobile" },
+    { "command": "npm run dev", "commandMode": "auto", "cwd": "satellites/creafid/creafid-dashboard", "color": "#3b82f6", "icon": "computer-desktop" }
+  ]
+}
+```
+
+The `cwd` priority when spawning a terminal is: **terminal `cwd`** → **group `cwd`** → **first session's `cwd`**.
 
 ## How to use
 
