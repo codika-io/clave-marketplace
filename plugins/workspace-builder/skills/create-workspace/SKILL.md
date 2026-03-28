@@ -253,18 +253,118 @@ When a single group contains apps in different subdirectories (e.g. a monorepo),
 
 The `cwd` priority when spawning a terminal is: **terminal `cwd`** → **group `cwd`** → **first session's `cwd`**.
 
+## File placement
+
+`.clave` files can be placed in three locations (checked in this order per directory):
+
+| Location | Use case |
+|---|---|
+| `workspace.clave` | Simple single-file setup in project root |
+| `.clave/workspace.clave` | Cleaner — keeps the root tidy |
+| `.clave/workspaces/default.clave` | **Recommended for repos.** Supports per-user overrides |
+
+For repos in a multi-repo workspace, always use `.clave/workspaces/default.clave`. This is the standard convention and enables the auto-discovery and per-user override features below.
+
+## Auto-discovery
+
+A workspace `.clave` file can automatically discover and load `.clave` files from repos nested under its root directory. Add `"autoDiscover": true` at the top level:
+
+```json
+{
+  "$schema": "clave/1.0",
+  "autoDiscover": true,
+  "groups": [
+    { "name": "Auth", "toolbar": true, "..." : "..." }
+  ]
+}
+```
+
+When the workspace is activated, Clave recursively scans the root directory for `.clave` files in repos and merges them as additional pinned groups alongside the workspace's own groups.
+
+**How it works:**
+- Scans up to 4 levels deep (configurable)
+- Skips `node_modules`, `.git`, `references`, `build`, `dist`, `.next`, `.turbo`
+- Each discovered file is independently tracked and watched for changes
+- Groups from the workspace file load first, discovered groups load after (sorted alphabetically)
+- On workspace deactivation, all discovered pins are cleaned up
+
+**Advanced configuration:**
+```json
+{
+  "autoDiscover": {
+    "enabled": true,
+    "patterns": ["workspace.clave", ".clave/workspace.clave"],
+    "exclude": ["node_modules", ".git", "references"],
+    "maxDepth": 4
+  }
+}
+```
+
+**Example setup — multi-repo workspace:**
+
+Root workspace (`.clave/workspaces/default.clave`):
+```json
+{
+  "$schema": "clave/1.0",
+  "autoDiscover": true,
+  "groups": [
+    { "name": "Auth", "cwd": ".", "toolbar": true, "sessions": [], "terminals": [...] },
+    { "name": "Platform", "cwd": "platform/app", "category": "Platform", "..." : "..." }
+  ]
+}
+```
+
+Repo-level file (`satellites/my-product/.clave/workspaces/default.clave`):
+```json
+{
+  "$schema": "clave/1.0",
+  "name": "My Product",
+  "cwd": ".",
+  "category": "Satellites",
+  "color": "blue",
+  "sessions": [{ "cwd": ".", "name": "My Product", "claudeMode": true, "dangerousMode": true }],
+  "terminals": [{ "command": "npm run dev", "commandMode": "auto", "color": "green", "icon": "bolt" }]
+}
+```
+
+The repo's group is auto-discovered and appears in the sidebar under "Satellites" — no need to add it to the root workspace file.
+
+## Per-user workspace overrides
+
+When a workspace file is named after a person (e.g. `romain.clave`), the auto-discovery scanner uses that name as a **workspace ID** to look for per-user overrides in repos.
+
+**Resolution order in each repo's `.clave/workspaces/` folder:**
+1. `{workspaceId}.clave` (e.g. `romain.clave`) — personal override
+2. `default.clave` — shared team default
+3. First `.clave` file found — fallback
+
+**Example:** If the root workspace is `romain.clave`, and a repo has:
+```
+.clave/workspaces/
+  default.clave      ← shared config (used by everyone)
+  romain.clave       ← Romain's override (different sessions, colors, etc.)
+```
+
+Romain's Clave app picks `romain.clave`. Another team member using `default.clave` as their workspace gets the shared config.
+
+This allows personal customization (extra debug sessions, different colors, additional terminals) without affecting the team's default configuration.
+
 ## How to use
 
-1. **Create the file** — Save as `workspace.clave` in your project root (or any `.clave` file anywhere)
+1. **Create the file** — Save as `.clave/workspaces/default.clave` in your project (or `workspace.clave` in the root)
 2. **Import into Clave** — Either:
    - Drag-drop the file from Finder onto the Clave pin area
-   - Or go to Settings → Workspaces → Add Workspace (select the folder containing `workspace.clave`)
+   - Or go to Settings → Workspaces → Add Workspace (select the folder containing the `.clave` file)
+   - Or rely on **auto-discovery** if the parent workspace has `"autoDiscover": true`
 3. **Activate** — Click the workspace in Settings to load all groups as pins
 4. **Launch** — Click any pin to spawn its sessions and terminals
 
 ## Best practices
 
-- **One workspace per project root** — Name it `workspace.clave` and commit it to the repo
+- **Use `.clave/workspaces/default.clave` for repos** — Standard convention, supports auto-discovery and per-user overrides
+- **Use `autoDiscover: true` for multi-repo workspaces** — New repos automatically appear when they add a `.clave` file
+- **Keep workspace-level groups minimal** — Only toolbar actions and cross-repo groups belong in the root workspace
+- **Use categories** — Group related pins under labels like `"Platform"`, `"Satellites"`, `"Tools"`
 - **Use toolbar for utilities** — Auth commands, CLI tools, and status checks work great as toolbar buttons
 - **Separate Claude and dev sessions** — Create one `claudeMode: true` session for AI work and one `claudeMode: false` for dev servers
 - **Use `prefill` for dangerous commands** — Deploy, publish, and destructive commands should require manual confirmation
